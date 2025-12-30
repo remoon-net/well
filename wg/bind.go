@@ -65,70 +65,16 @@ func BindIPC(se *core.ServeEvent) (err error) {
 	})
 
 	ipc.POST("/device", func(e *core.RequestEvent) (err error) {
-		defer err0.Then(&err, nil, func() {
-			dev = nil // 出错了的话将 device 重置为 nil
-		})
-
-		if dev != nil {
-			return apis.NewApiError(http.StatusOK, "device 已启动", nil)
-		}
-
 		var params DeviceParams
-		try.To(e.BindBody(&params))
-
-		viper.ReadInConfig() // 重新加载配置文件
-		keyStr := viper.GetString("wg_key")
-		key := device.NoisePrivateKey(decodeBase64(keyStr))
-		routes := getRoutes()
-		_, portStr := try.To2(net.SplitHostPort(viper.GetString("listen")))
-		port := try.To1(strconv.Atoi(portStr))
-
-		c := &Config{
-			App:  e.App,
-			key:  key,
-			port: uint16(port),
-		}
-		for i, r := range routes {
-			pf := try.To1(netip.ParsePrefix(r))
-			c.dst[i] = pf.Addr()
+		if err := e.BindBody(&params); err != nil {
+			return err
 		}
 
-		var cRouteUp = func(tun tun.Device, routes []string) (err error) {
-			e.App.Logger().Error("此平台不支持RouteUp", "os", runtime.GOOS)
-			return nil
-		}
-		if RouteUp != nil {
-			cRouteUp = RouteUp
+		if err := startWireGuard(e.App, params); err != nil {
+			return err
 		}
 
-		var tdev tun.Device
-		switch {
-		case params.FD != 0:
-			tdev = try.To1(tunFromFD(params.FD))
-		default:
-			const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
-			tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), MTU))
-		}
-		defer err0.Then(&err, nil, func() {
-			tdev.Close() // 如果出错了, 释放资源
-		})
-
-		b := bind.New(c)
-		logger := logger.New("net.remoon.well ")
-		dev = device.NewDevice(tdev, b, logger)
-		ipcConf := try.To1(c.IpcConfig())
-		try.To(dev.IpcSet(ipcConf))
-		b.Device.Store(dev)
-		try.To(dev.Up())
-		defer err0.Then(&err, nil, func() {
-			dev.Close() // 如果出错了, 释放资源
-		})
-
-		if !params.Routed {
-			try.To(cRouteUp(tdev, routes))
-		}
-
-		return e.String(http.StatusCreated, "启动成功")
+		return e.JSON(http.StatusCreated, apis.NewApiError(http.StatusCreated, "启动成功", nil))
 	})
 	ipc.DELETE("/device", func(e *core.RequestEvent) error {
 		if dev == nil {
@@ -148,7 +94,81 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		}
 		return e.String(http.StatusOK, s)
 	})
+
+	func() {
+		if !viper.GetBool("auto_start") {
+			return
+		}
+		devLocker.Lock()
+		defer devLocker.Unlock()
+		err := startWireGuard(se.App, DeviceParams{})
+		try.To(err)
+	}()
+
 	return se.Next()
+}
+
+func startWireGuard(app core.App, params DeviceParams) (err error) {
+	if dev != nil {
+		return apis.NewApiError(http.StatusOK, "device 已启动", nil)
+	}
+	defer err0.Then(&err, nil, func() {
+		dev = nil // 出错了的话将 device 重置为 nil
+	})
+
+	viper.ReadInConfig() // 重新加载配置文件
+	keyStr := viper.GetString("wg_key")
+	key := device.NoisePrivateKey(decodeBase64(keyStr))
+	routes := getRoutes()
+	_, portStr := try.To2(net.SplitHostPort(viper.GetString("listen")))
+	port := try.To1(strconv.Atoi(portStr))
+
+	c := &Config{
+		App:  app,
+		key:  key,
+		port: uint16(port),
+	}
+	for i, r := range routes {
+		pf := try.To1(netip.ParsePrefix(r))
+		c.dst[i] = pf.Addr()
+	}
+
+	var cRouteUp = func(tun tun.Device, routes []string) (err error) {
+		app.Logger().Error("此平台不支持RouteUp", "os", runtime.GOOS)
+		return nil
+	}
+	if RouteUp != nil {
+		cRouteUp = RouteUp
+	}
+
+	var tdev tun.Device
+	switch {
+	case params.FD != 0:
+		tdev = try.To1(tunFromFD(params.FD))
+	default:
+		const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
+		tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), MTU))
+	}
+	defer err0.Then(&err, nil, func() {
+		tdev.Close() // 如果出错了, 释放资源
+	})
+
+	b := bind.New(c)
+	logger := logger.New("net.remoon.well ")
+	dev = device.NewDevice(tdev, b, logger)
+	ipcConf := try.To1(c.IpcConfig())
+	try.To(dev.IpcSet(ipcConf))
+	b.Device.Store(dev)
+	try.To(dev.Up())
+	defer err0.Then(&err, nil, func() {
+		dev.Close() // 如果出错了, 释放资源
+	})
+
+	if !params.Routed {
+		try.To(cRouteUp(tdev, routes))
+	}
+
+	return nil
 }
 
 type DeviceParams struct {
