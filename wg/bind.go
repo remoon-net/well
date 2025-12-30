@@ -46,8 +46,11 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		if err != nil {
 			return apis.NewBadRequestError("获取请求信息出错", err)
 		}
-		if false && !info.HasSuperuserAuth() {
-			return apis.NewUnauthorizedError("仅允许管理员请求该接口", nil)
+		prod := !e.App.IsDev()
+		if prod {
+			if !info.HasSuperuserAuth() {
+				return apis.NewUnauthorizedError("仅允许管理员请求该接口", nil)
+			}
 		}
 		if locked := devLocker.TryLock(); !locked {
 			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
