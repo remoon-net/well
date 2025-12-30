@@ -32,7 +32,7 @@ func init() {
 				Name: "credential", Id: ID("credential"), System: true,
 				Required: false,
 			},
-			&core.TextField{
+			&core.BoolField{
 				Name: "default", Id: ID("default"), System: true,
 				Required: false,
 			},
@@ -50,6 +50,10 @@ func init() {
 			&core.TextField{
 				Name: "name", Id: ID("name"), System: true,
 				Required: false, Presentable: true,
+			},
+			&core.BoolField{
+				Name: "disabled", Id: ID("disabled"), System: true,
+				Required: false,
 			},
 			&core.DateField{
 				Name: "handshaked", Id: ID("handshaked"), System: true,
