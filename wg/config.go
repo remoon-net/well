@@ -20,8 +20,9 @@ import (
 
 type Config struct {
 	core.App
-	key device.NoisePrivateKey
-	dst [2]netip.Addr // [0]v6 [1]v4
+	key  device.NoisePrivateKey
+	dst  [2]netip.Addr // [0]v6 [1]v4
+	port uint16
 }
 
 var _ bind.Config = (*Config)(nil)
@@ -33,9 +34,7 @@ func (app *Config) GetPeer(initiator []byte, endpoint string) (peer bind.Peer) {
 		logger.Error("get peer failed", "error", err)
 		peer = nil
 	})
-	var p *Peer = &Peer{
-		app: app,
-	}
+	var p *Peer = NewPeer(app)
 	switch {
 	case endpoint != "":
 		eps := []string{}

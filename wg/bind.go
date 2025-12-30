@@ -1,9 +1,11 @@
 package wg
 
 import (
+	"net"
 	"net/http"
 	"net/netip"
 	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/pocketbase/pocketbase/apis"
@@ -60,7 +62,9 @@ func BindIPC(se *core.ServeEvent) (err error) {
 	})
 
 	ipc.POST("/device", func(e *core.RequestEvent) (err error) {
-		defer err0.Then(&err, nil, nil)
+		defer err0.Then(&err, nil, func() {
+			dev = nil // 出错了的话将 device 重置为 nil
+		})
 
 		if dev != nil {
 			return apis.NewApiError(http.StatusOK, "device 已启动", nil)
@@ -73,10 +77,13 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		keyStr := viper.GetString("wg_key")
 		key := device.NoisePrivateKey(decodeBase64(keyStr))
 		routes := getRoutes()
+		_, portStr := try.To2(net.SplitHostPort(viper.GetString("listen")))
+		port := try.To1(strconv.Atoi(portStr))
 
 		c := &Config{
-			App: e.App,
-			key: key,
+			App:  e.App,
+			key:  key,
+			port: uint16(port),
 		}
 		for i, r := range routes {
 			pf := try.To1(netip.ParsePrefix(r))
@@ -99,14 +106,24 @@ func BindIPC(se *core.ServeEvent) (err error) {
 			const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
 			tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), MTU))
 		}
+		defer err0.Then(&err, nil, func() {
+			tdev.Close() // 如果出错了, 释放资源
+		})
 
 		b := bind.New(c)
 		logger := logger.New("net.remoon.well ")
 		dev = device.NewDevice(tdev, b, logger)
+		ipcConf := try.To1(c.IpcConfig())
+		try.To(dev.IpcSet(ipcConf))
 		b.Device.Store(dev)
 		try.To(dev.Up())
+		defer err0.Then(&err, nil, func() {
+			dev.Close() // 如果出错了, 释放资源
+		})
 
-		try.To(cRouteUp(tdev, routes))
+		if !params.Routed {
+			try.To(cRouteUp(tdev, routes))
+		}
 
 		return e.String(http.StatusCreated, "启动成功")
 	})
@@ -132,5 +149,6 @@ func BindIPC(se *core.ServeEvent) (err error) {
 }
 
 type DeviceParams struct {
-	FD int `json:"fd"`
+	FD     int  `json:"fd"`     //
+	Routed bool `json:"routed"` // 如果路由已经添加好了, 则不再次添加
 }

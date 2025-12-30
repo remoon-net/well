@@ -23,6 +23,12 @@ type Peer struct {
 	outbound bool
 }
 
+func NewPeer(app core.App) *Peer {
+	return &Peer{
+		app: app,
+	}
+}
+
 type ICE struct {
 	URLs       string `json:"urls"`
 	Username   string `json:"username"`
