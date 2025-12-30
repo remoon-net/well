@@ -29,6 +29,7 @@ func main() {
 		e.Server.Addr = addr
 		return e.Next()
 	})
+	app.OnServe().BindFunc(wg.BindHook)
 	app.OnServe().BindFunc(wg.BindIPC)
 	try.To(app.Start())
 }

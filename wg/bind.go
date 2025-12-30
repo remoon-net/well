@@ -23,6 +23,13 @@ import (
 var dev *device.Device
 var devLocker sync.Mutex
 
+func getRoutes() []string {
+	return []string{
+		"fdd9:f800::1/24",
+		viper.GetString("ip4_route"),
+	}
+}
+
 func BindIPC(se *core.ServeEvent) (err error) {
 	defer err0.Then(&err, nil, nil)
 
@@ -48,13 +55,6 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		defer devLocker.Unlock()
 		return e.Next()
 	})
-
-	getRoutes := func() []string {
-		return []string{
-			"fdd9:f800::1/24",
-			viper.GetString("ip4_route"),
-		}
-	}
 
 	ipc.GET("/device/routes", func(e *core.RequestEvent) error {
 		// 给安卓端用的, 安卓端路由必须在 builder.establish() 之前设定好之后才有 tun, 需要分两步
