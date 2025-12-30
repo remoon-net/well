@@ -62,6 +62,10 @@ func (app *Config) GetPeer(initiator []byte, endpoint string) (peer bind.Peer) {
 		p.SetProxyRecord(record)
 	}
 
+	if p.GetBool("disabled") {
+		return nil
+	}
+
 	n := nat.New()
 	dst6, dst4 := app.dst[0], app.dst[1]
 	ip6 := p.GetString("ipv6")
