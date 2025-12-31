@@ -42,7 +42,7 @@ var _ bind.PeerPubkey = (*Peer)(nil)
 var _ bind.PeerHandshakeHook = (*Peer)(nil)
 
 func (p *Peer) GetID() string {
-	return p.GetID()
+	return p.Id
 }
 
 func (p *Peer) GetPubkey() device.NoisePublicKey {
