@@ -1,9 +1,12 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/shynome/err0/try"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	_ "remoon.net/well/db/migrations"
 	"remoon.net/well/wg"
@@ -25,11 +28,28 @@ func main() {
 	viper.ReadInConfig()
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) (err error) {
+		serveCmd := getServeCmd(app)
+		listenFlag := serveCmd.Flag("http")
+		if listenFlag.Changed {
+			wg.ListenAddr = listenFlag.Value.String()
+			return e.Next()
+		}
 		addr := viper.GetString("listen")
 		e.Server.Addr = addr
+		wg.ListenAddr = addr
 		return e.Next()
 	})
 	app.OnServe().BindFunc(wg.BindHook)
 	app.OnServe().BindFunc(wg.BindIPC)
 	try.To(app.Start())
+}
+
+func getServeCmd(app *pocketbase.PocketBase) *cobra.Command {
+	cmds := app.RootCmd.Commands()
+	for _, cmd := range cmds {
+		if strings.HasPrefix(cmd.Use, "serve ") {
+			return cmd
+		}
+	}
+	return nil
 }

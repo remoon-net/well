@@ -123,6 +123,8 @@ func BindIPC(se *core.ServeEvent) (err error) {
 	return se.Next()
 }
 
+var ListenAddr string
+
 func startWireGuard(app core.App, params DeviceParams) (err error) {
 	dev := wgBind.GetDevice()
 	if dev != nil {
@@ -136,7 +138,7 @@ func startWireGuard(app core.App, params DeviceParams) (err error) {
 	keyStr := viper.GetString("wg_key")
 	key := device.NoisePrivateKey(decodeBase64(keyStr))
 	routes := getRoutes()
-	_, portStr := try.To2(net.SplitHostPort(viper.GetString("listen")))
+	_, portStr := try.To2(net.SplitHostPort(ListenAddr))
 	port := try.To1(strconv.Atoi(portStr))
 
 	base := configBase{
