@@ -87,8 +87,8 @@ type Linker struct {
 
 func (lk *Linker) Start(ctx context.Context) {
 	logger := lk.app.Logger().With(
-		"linker", lk.Id,
-		"whip", lk.GetString("whip"),
+		"id", lk.Id,
+		"linker", lk.GetString("linker"),
 	)
 	retry.Do(func() (err error) {
 		defer err0.Then(&err, nil, func() {
@@ -97,7 +97,7 @@ func (lk *Linker) Start(ctx context.Context) {
 
 		lk.updateStatus("connecting")
 
-		link := lk.GetString("whip")
+		link := lk.GetString("linker")
 		u := try.To1(url.Parse(link))
 
 		opts := &websocket.DialOptions{
@@ -138,8 +138,8 @@ func (lk *Linker) Start(ctx context.Context) {
 func (lk *Linker) updateStatus(s string) {
 	q := dbx.HashExp{"id": lk.Id}
 	p := dbx.Params{"status": s}
-	logger := lk.app.Logger().With("linker", lk.Id)
+	logger := lk.app.Logger().With("id", lk.Id)
 	if _, err := lk.app.DB().Update(db.TableLinkers, p, q).Execute(); err != nil {
-		logger.Error("update status failed", "error", err)
+		logger.Error("update linker status failed", "error", err)
 	}
 }

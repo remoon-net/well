@@ -29,8 +29,12 @@ func init() {
 				Required: false,
 			},
 			&core.URLField{
-				Name: "whip", Id: ID("whip"), System: true,
+				Name: "linker", Id: ID("linker"), System: true,
 				Required: true,
+			},
+			&core.URLField{
+				Name: "whip", Id: ID("whip"), System: true,
+				Required: false,
 			},
 		)
 		addUpdatedFields(linkers)
