@@ -35,6 +35,16 @@ func Main(argsStr string) string {
 	viper.ReadInConfig()
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) (err error) {
+		e.InstallerFunc = func(app core.App, systemSuperuser *core.Record, baseURL string) error {
+			superusers, err := app.FindCachedCollectionByNameOrId("_superusers")
+			if err != nil {
+				return err
+			}
+			su := core.NewRecord(superusers)
+			su.SetEmail("well@remoon.net")
+			su.SetPassword("well@remoon.net")
+			return app.Save(su)
+		}
 		serveCmd := getServeCmd(app)
 		listenFlag := serveCmd.Flag("http")
 		if listenFlag.Changed {
