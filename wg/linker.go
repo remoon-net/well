@@ -27,7 +27,7 @@ func BindLinkers(se *core.ServeEvent) error {
 		return err
 	}
 	for _, r := range linkers {
-		lks.GetOrSet(r.Id, linkerInit(r))
+		lks.GetOrSet(r.Id, linkerInit(se.App, r))
 	}
 
 	preUpdateRequest(se.App, db.TableLinkers, func(e *core.RecordRequestEvent) error {
@@ -42,7 +42,7 @@ func BindLinkers(se *core.ServeEvent) error {
 		if r.GetBool("disabled") {
 			return nil // 如果被禁用后则不再启用
 		}
-		lks.GetOrSet(r.Id, linkerInit(r))
+		lks.GetOrSet(r.Id, linkerInit(e.App, r))
 		return nil
 	})
 	se.App.OnRecordUpdateRequest(db.TableLinkers).BindFunc(func(e *core.RecordRequestEvent) error {
@@ -56,12 +56,15 @@ func BindLinkers(se *core.ServeEvent) error {
 	return se.Next()
 }
 
-func linkerInit(r *core.Record) func() *Linker {
+func linkerInit(app core.App, r *core.Record) func() *Linker {
+	ctx := context.Background()
+	ctx, stop := context.WithCancel(ctx)
+	linker := &Linker{
+		app:  app,
+		Stop: stop,
+	}
+	linker.SetProxyRecord(r)
 	return func() *Linker {
-		ctx := context.Background()
-		ctx, stop := context.WithCancel(ctx)
-		linker := &Linker{Stop: stop}
-		linker.SetProxyRecord(r)
 		go linker.Start(ctx)
 		return linker
 	}

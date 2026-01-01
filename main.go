@@ -41,6 +41,7 @@ func main() {
 	})
 	app.OnServe().BindFunc(wg.BindHook)
 	app.OnServe().BindFunc(wg.BindIPC)
+	app.OnServe().BindFunc(wg.BindLinkers)
 	try.To(app.Start())
 }
 
