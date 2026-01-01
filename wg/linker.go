@@ -26,6 +26,9 @@ func BindLinkers(se *core.ServeEvent) error {
 	if err != nil {
 		return err
 	}
+	if _, err := se.App.DB().Update(db.TableLinkers, dbx.Params{"status": ""}, dbx.Not(dbx.HashExp{"status": ""})).Execute(); err != nil {
+		return err
+	}
 	for _, r := range linkers {
 		lks.GetOrSet(r.Id, linkerInit(se.App, r))
 	}
