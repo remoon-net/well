@@ -23,6 +23,7 @@ import (
 var devLocker sync.Mutex
 var wgBind *bind.Bind
 var wgConfig *Config
+var wgHandler http.Handler
 
 func getRoutes() []string {
 	return []string{
@@ -44,6 +45,13 @@ func BindIPC(se *core.ServeEvent) (err error) {
 	wgConfig = &Config{App: se.App}
 	wgBind = bind.New(wgConfig)
 	wgBind.SetLogger(se.App.Logger())
+	wgHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if wgBind.GetDevice() == nil {
+			http.Error(w, "WireGuard 尚未启动", http.StatusServiceUnavailable)
+			return
+		}
+		wgBind.ServeHTTP(w, r)
+	})
 
 	se.Router.Any("/api/whip", func(e *core.RequestEvent) error {
 		if wgBind.GetDevice() == nil {

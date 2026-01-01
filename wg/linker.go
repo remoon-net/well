@@ -126,7 +126,7 @@ func (lk *Linker) Start(ctx context.Context) {
 		try.To1(sess.Ping())
 
 		lk.updateStatus("connected")
-		return http.Serve(sess, wgBind)
+		return http.Serve(sess, wgHandler)
 	},
 		retry.Context(ctx),
 		retry.Attempts(0),
