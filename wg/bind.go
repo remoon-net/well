@@ -98,6 +98,12 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		wgBind.Device.Store(nil)
 		return e.NoContent(http.StatusNoContent)
 	})
+	se.App.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		if dev := wgBind.Device.Swap(nil); dev != nil {
+			dev.Close()
+		}
+		return e.Next()
+	})
 	ipc.GET("/device", func(e *core.RequestEvent) error {
 		dev := wgBind.GetDevice()
 		if dev == nil {
