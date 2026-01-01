@@ -54,7 +54,7 @@ func BindLinkers(se *core.ServeEvent) error {
 		lks.GetOrSet(r.Id, linkerInit(e.App, r))
 		return nil
 	})
-	se.App.OnRecordUpdateRequest(db.TableLinkers).BindFunc(func(e *core.RecordRequestEvent) error {
+	se.App.OnRecordDeleteRequest(db.TableLinkers).BindFunc(func(e *core.RecordRequestEvent) error {
 		r := e.Record
 		if lk, ok := lks.GetOk(r.Id); ok {
 			lks.Remove(r.Id)
