@@ -118,7 +118,7 @@ func (lk *Linker) Start(ctx context.Context) {
 		u.Fragment = "" //要去除 Fragment
 		link = u.String()
 
-		socket, _, err := websocket.Dial(ctx, link, opts)
+		socket, _ := try.To2(websocket.Dial(ctx, link, opts))
 		conn := websocket.NetConn(ctx, socket, websocket.MessageBinary)
 		sess := try.To1(yamux.Server(conn, nil))
 		defer sess.Close()
