@@ -66,14 +66,14 @@ func BindLinkers(se *core.ServeEvent) error {
 }
 
 func linkerInit(app core.App, r *core.Record) func() *Linker {
-	ctx := context.Background()
-	ctx, stop := context.WithCancel(ctx)
-	linker := &Linker{
-		app:  app,
-		Stop: stop,
-	}
-	linker.SetProxyRecord(r)
 	return func() *Linker {
+		ctx := context.Background()
+		ctx, stop := context.WithCancel(ctx)
+		linker := &Linker{
+			app:  app,
+			Stop: stop,
+		}
+		linker.SetProxyRecord(r)
 		go linker.Start(ctx)
 		return linker
 	}
