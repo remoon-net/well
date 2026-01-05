@@ -80,7 +80,7 @@ func (app *Config) GetPeer(initiator []byte, endpoint string) (peer bind.Peer) {
 		src := try.To1(netip.ParsePrefix(ip4)).Addr()
 		n.SetNAT4(src, dst4)
 		if ip6 == "" {
-			ip6 = "fdd9:f800::" + src.String() + "/128"
+			ip6 = try.To1(ip4in6(ip4))
 		}
 	}
 	if ip6 != "" {
