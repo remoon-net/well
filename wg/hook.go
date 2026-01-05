@@ -30,6 +30,20 @@ func BindHook(se *core.ServeEvent) error {
 		}
 		return preUpdatePeer(e)
 	})
+	se.App.OnRecordsListRequest(db.TablePeers).BindFunc(func(e *core.RecordsListRequestEvent) error {
+		for _, p := range e.Records {
+			if ip4 := p.GetString("ipv4"); ip4 != "" {
+				ip6, err := ip4in6(ip4)
+				if err != nil {
+					return err
+				}
+				e := p.Expand()
+				e["ip4in6"] = ip6
+				p.SetExpand(e)
+			}
+		}
+		return e.Next()
+	})
 	// 操作
 	preUpdateRequest(se.App, db.TablePeers, func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {

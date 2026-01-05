@@ -52,9 +52,7 @@ func (p *Peer) IpcConfig() (_ string, err error) {
 	ip6 := p.GetString("ipv6")
 	allows := []string{ip4, ip6}
 	if ip4 != "" {
-		ip4 := try.To1(netip.ParsePrefix(ip4))
-		ip4str := ip4.Addr().String()
-		ip4in6 := "fdd9:f8f4::" + ip4str + "/128"
+		ip4in6 := try.To1(ip4in6(ip4))
 		allows = append(allows, ip4in6)
 	}
 	for _, ip := range allows {
@@ -87,3 +85,13 @@ func (p *Peer) IpcConfig() (_ string, err error) {
 }
 
 const defaultPSK = "0000000000000000000000000000000000000000000000000000000000000000"
+
+func ip4in6(ip4raw string) (string, error) {
+	ip4, err := netip.ParsePrefix(ip4raw)
+	if err != nil {
+		return "", err
+	}
+	ip4str := ip4.Addr().String()
+	ip4in6 := "fdd9:f8f4::" + ip4str + "/128"
+	return ip4in6, nil
+}
