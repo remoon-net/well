@@ -7,9 +7,11 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/shynome/err0"
 	"github.com/shynome/err0/try"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"remoon.net/well/db"
 	_ "remoon.net/well/db/migrations"
 	"remoon.net/well/wg"
 )
@@ -35,15 +37,25 @@ func Main(argsStr string) string {
 	viper.ReadInConfig()
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) (err error) {
-		e.InstallerFunc = func(app core.App, systemSuperuser *core.Record, baseURL string) error {
-			superusers, err := app.FindCachedCollectionByNameOrId("_superusers")
-			if err != nil {
-				return err
-			}
+		e.InstallerFunc = func(app core.App, systemSuperuser *core.Record, baseURL string) (err error) {
+			defer err0.Then(&err, nil, nil)
+
+			superusers := try.To1(app.FindCachedCollectionByNameOrId("_superusers"))
 			su := core.NewRecord(superusers)
 			su.SetEmail("well@remoon.net")
 			su.SetPassword("well@remoon.net")
-			return app.Save(su)
+			try.To(app.Save(su))
+
+			ices := try.To1(app.FindCachedCollectionByNameOrId(db.TableICEs))
+			ice := core.NewRecord(ices)
+			ice.Load(map[string]any{
+				"name":    "remoon",
+				"urls":    "stun:stun.remoon.net:80",
+				"default": true,
+			})
+			try.To(app.Save(ice))
+
+			return nil
 		}
 		serveCmd := getServeCmd(app)
 		listenFlag := serveCmd.Flag("http")
