@@ -73,13 +73,6 @@ func BindIPC(se *core.ServeEvent) (err error) {
 				return apis.NewUnauthorizedError("仅允许管理员请求该接口", nil)
 			}
 		}
-		if f, _ := info.Query["devlocker"]; f == "false" {
-			return e.Next()
-		}
-		if locked := devLocker.TryLock(); !locked {
-			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
-		}
-		defer devLocker.Unlock()
 		return e.Next()
 	})
 
@@ -91,7 +84,12 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		return e.NoContent(http.StatusNoContent)
 	})
 
-	ipc.POST("/device", func(e *core.RequestEvent) (err error) {
+	ipc.POST("/device", func(e *core.RequestEvent) error {
+		if locked := devLocker.TryLock(); !locked {
+			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
+		}
+		defer devLocker.Unlock()
+
 		var params DeviceParams
 		if err := e.BindBody(&params); err != nil {
 			return err
@@ -104,6 +102,11 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		return e.JSON(http.StatusCreated, apis.NewApiError(http.StatusCreated, "启动成功", nil))
 	})
 	ipc.DELETE("/device", func(e *core.RequestEvent) error {
+		if locked := devLocker.TryLock(); !locked {
+			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
+		}
+		defer devLocker.Unlock()
+
 		dev := wgBind.GetDevice()
 		if dev == nil {
 			return apis.NewApiError(http.StatusServiceUnavailable, "device 尚未启动", nil)
