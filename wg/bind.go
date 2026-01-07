@@ -56,7 +56,7 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		wgBind.ServeHTTP(w, r)
 	})
 
-	se.Router.Any("/api/whip", func(e *core.RequestEvent) error {
+	se.Router.GET("/api/whip", func(e *core.RequestEvent) error {
 		wgHandler.ServeHTTP(e.Response, e.Request)
 		return nil
 	})
