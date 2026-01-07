@@ -59,6 +59,7 @@ func Main(argsStr string) string {
 	app.OnServe().BindFunc(wg.BindHook)
 	app.OnServe().BindFunc(wg.BindIPC)
 	app.OnServe().BindFunc(wg.BindLinkers)
+	app.OnServe().Bind(uiHandler)
 
 	if argsStr == "" {
 		try.To(app.Start())

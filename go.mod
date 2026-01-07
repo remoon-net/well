@@ -2,6 +2,8 @@ module remoon.net/well
 
 go 1.25.5
 
+replace remoon.net/well-webui => ../well-webui
+
 replace golang.zx2c4.com/wireguard => github.com/remoon-net/wireguard-go v0.0.0-20250703151635-97f4294f663c
 
 require (
@@ -20,6 +22,7 @@ require (
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
 	golang.zx2c4.com/wireguard/windows v0.5.3
+	remoon.net/well-webui v0.0.0-00010101000000-000000000000
 )
 
 require (
