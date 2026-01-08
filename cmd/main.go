@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -30,11 +29,7 @@ func Main(argsStr string) string {
 		try.To(json.Unmarshal([]byte(argsStr), &args))
 		os.Args = append(os.Args, args...)
 	}
-	wd := try.To1(os.Getwd())
-	basedir := filepath.Join(wd, "pb_data")
-	app := pocketbase.NewWithConfig(pocketbase.Config{
-		DefaultDataDir: basedir,
-	})
+	app := pocketbase.New()
 	app.RootCmd.Version = Version
 
 	ddir := app.DataDir()
