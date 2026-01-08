@@ -1,0 +1,13 @@
+[Unit]
+Description=well-net service
+Documentation=https://github.com/remoon-net/well
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/well-net serve --dir /var/lib/well-net/
+WorkingDirectory=/var/lib/well-net/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

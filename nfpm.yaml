@@ -1,0 +1,30 @@
+name: well-net
+arch: amd64
+platform: linux
+version: 0.0.1
+section: net
+priority: optional
+maintainer: "shynome <shynome@gmail.com>"
+description: "well-net is a VPN based on WireGuard and WebRTC."
+license: GPL-3.0
+
+contents:
+  - src: ./well-net
+    dst: /usr/bin/well-net
+    file_info:
+      mode: 0755
+  - src: ./systemd/well-net.service
+    dst: /lib/systemd/system/well-net.service
+    type: config
+  - src: ""
+    dst: /var/lib/well-net
+    type: dir
+    file_info:
+      mode: 0755
+
+scripts:
+  postinstall: ./scripts/postinstall.sh
+  postremove: ./scripts/postremove.sh
+
+depends:
+  - iproute2
