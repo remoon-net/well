@@ -44,9 +44,6 @@ func InitIPC(app core.App) (err error) {
 	}
 
 	wgConfig = &Config{App: app}
-	base := getBaseTry()
-	wgConfig.base.Store(&base)
-
 	wgBind = bind.New(wgConfig)
 	wgBind.SetLogger(app.Logger())
 	wgHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +54,12 @@ func InitIPC(app core.App) (err error) {
 		wgBind.ServeHTTP(w, r)
 	})
 
-	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+	app.OnServe().BindFunc(func(se *core.ServeEvent) (err error) {
+		defer err0.Then(&err, nil, nil)
+
+		base := getBaseTry()
+		wgConfig.base.Store(&base)
+
 		se.Router.GET("/api/whip", func(e *core.RequestEvent) error {
 			wgHandler.ServeHTTP(e.Response, e.Request)
 			return nil
