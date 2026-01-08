@@ -33,7 +33,7 @@ func GetRoutes() []string {
 	}
 }
 
-func BindIPC(se *core.ServeEvent) (err error) {
+func InitIPC(app core.App) (err error) {
 	defer err0.Then(&err, nil, nil)
 
 	if keyStr := viper.GetString("wg_key"); keyStr == "" {
@@ -43,12 +43,12 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		try.To(viper.SafeWriteConfig())
 	}
 
-	wgConfig = &Config{App: se.App}
+	wgConfig = &Config{App: app}
 	base := getBaseTry()
 	wgConfig.base.Store(&base)
 
 	wgBind = bind.New(wgConfig)
-	wgBind.SetLogger(se.App.Logger())
+	wgBind.SetLogger(app.Logger())
 	wgHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if wgBind.GetDevice() == nil {
 			http.Error(w, "WireGuard 尚未启动", http.StatusServiceUnavailable)
@@ -57,145 +57,150 @@ func BindIPC(se *core.ServeEvent) (err error) {
 		wgBind.ServeHTTP(w, r)
 	})
 
-	se.Router.GET("/api/whip", func(e *core.RequestEvent) error {
-		wgHandler.ServeHTTP(e.Response, e.Request)
-		return nil
-	})
+	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		se.Router.GET("/api/whip", func(e *core.RequestEvent) error {
+			wgHandler.ServeHTTP(e.Response, e.Request)
+			return nil
+		})
 
-	ipc := se.Router.Group("/api/ipc")
-	ipc.BindFunc(func(e *core.RequestEvent) error {
-		info, err := e.RequestInfo()
-		if err != nil {
-			return apis.NewBadRequestError("获取请求信息出错", err)
-		}
-		prod := !e.App.IsDev()
-		if prod {
-			if !info.HasSuperuserAuth() {
-				return apis.NewUnauthorizedError("仅允许管理员请求该接口", nil)
+		ipc := se.Router.Group("/api/ipc")
+		ipc.BindFunc(func(e *core.RequestEvent) error {
+			info, err := e.RequestInfo()
+			if err != nil {
+				return apis.NewBadRequestError("获取请求信息出错", err)
 			}
-		}
-		return e.Next()
-	})
-
-	ipc.GET("/device/android/start", func(e *core.RequestEvent) error {
-		if mvpn == nil {
-			return apis.NewApiError(http.StatusServiceUnavailable, "mvpn 尚未设置", nil)
-		}
-		mvpn.Start()
-		return e.NoContent(http.StatusNoContent)
-	})
-
-	ipc.POST("/device", func(e *core.RequestEvent) error {
-		if locked := devLocker.TryLock(); !locked {
-			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
-		}
-		defer devLocker.Unlock()
-
-		var params DeviceParams
-		if err := e.BindBody(&params); err != nil {
-			return err
-		}
-
-		if err := startWireGuard(params); err != nil {
-			return err
-		}
-
-		return e.JSON(http.StatusCreated, apis.NewApiError(http.StatusCreated, "启动成功", nil))
-	})
-	ipc.DELETE("/device", func(e *core.RequestEvent) error {
-		if locked := devLocker.TryLock(); !locked {
-			return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
-		}
-		defer devLocker.Unlock()
-
-		dev := wgBind.GetDevice()
-		if dev == nil {
-			return apis.NewApiError(http.StatusServiceUnavailable, "device 尚未启动", nil)
-		}
-		dev.Close()
-		wgBind.Device.Store(nil)
-		return e.NoContent(http.StatusNoContent)
-	})
-	se.App.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
-		if dev := wgBind.Device.Swap(nil); dev != nil {
-			dev.Close()
-		}
-		return e.Next()
-	})
-	ipc.GET("/device", func(e *core.RequestEvent) error {
-		base := wgConfig.base.Load()
-		if base == nil {
-			return apis.NewApiError(http.StatusServiceUnavailable, "服务尚未初始化成功", nil)
-		}
-		pubkey := wgtypes.Key(base.key).PublicKey()
-		ds := DeviceStatus{
-			Running: wgBind.GetDevice() != nil,
-			Pubkey:  pubkey.String(),
-			Routes:  GetRoutes(),
-			Android: mvpn != nil,
-		}
-		return e.JSON(http.StatusOK, ds)
-	})
-
-	ipc.GET("/settings", func(e *core.RequestEvent) error {
-		var s Settings
-		if err := viper.Unmarshal(&s); err != nil {
-			return err
-		}
-		s2 := SettingsWithRunning{
-			Settings: s,
-		}
-		s2.Running = wgBind.GetDevice() != nil
-		return e.JSON(http.StatusOK, s2)
-	})
-	ipc.POST("/settings", func(e *core.RequestEvent) (err error) {
-		defer err0.Then(&err, nil, nil)
-
-		var s Settings
-		try.To(e.BindBody(&s))
-		oldListen := viper.GetString("listen")
-
-		ms := map[string]any{}
-		b := try.To1(json.Marshal(s))
-		try.To(json.Unmarshal(b, &ms))
-		try.To(viper.MergeConfigMap(ms))
-		try.To(viper.WriteConfig())
-
-		if s.Listen != oldListen {
-			event := &core.TerminateEvent{
-				App:       e.App,
-				IsRestart: true,
+			prod := !e.App.IsDev()
+			if prod {
+				if !info.HasSuperuserAuth() {
+					return apis.NewUnauthorizedError("仅允许管理员请求该接口", nil)
+				}
 			}
-			e.App.OnTerminate().Trigger(event, func(e *core.TerminateEvent) error {
-				logger := e.App.Logger()
-				RestartCh <- 1
-				logger.Info("重启中")
-				return e.Next()
-			})
+			return e.Next()
+		})
+
+		ipc.GET("/device/android/start", func(e *core.RequestEvent) error {
+			if mvpn == nil {
+				return apis.NewApiError(http.StatusServiceUnavailable, "mvpn 尚未设置", nil)
+			}
+			mvpn.Start()
 			return e.NoContent(http.StatusNoContent)
-		}
+		})
 
-		running := wgBind.GetDevice() != nil
-		if running {
-			StopWireGuard()
-			if err := CommonStartWireGuard(); err != nil {
-				return apis.NewInternalServerError(err.Error(), err)
+		ipc.POST("/device", func(e *core.RequestEvent) error {
+			if locked := devLocker.TryLock(); !locked {
+				return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
 			}
-		}
+			defer devLocker.Unlock()
 
-		return e.NoContent(http.StatusNoContent)
+			var params DeviceParams
+			if err := e.BindBody(&params); err != nil {
+				return err
+			}
+
+			if err := startWireGuard(params); err != nil {
+				return err
+			}
+
+			return e.JSON(http.StatusCreated, apis.NewApiError(http.StatusCreated, "启动成功", nil))
+		})
+		ipc.DELETE("/device", func(e *core.RequestEvent) error {
+			if locked := devLocker.TryLock(); !locked {
+				return apis.NewApiError(http.StatusLocked, "device 正在被操作中", nil)
+			}
+			defer devLocker.Unlock()
+
+			dev := wgBind.GetDevice()
+			if dev == nil {
+				return apis.NewApiError(http.StatusServiceUnavailable, "device 尚未启动", nil)
+			}
+			dev.Close()
+			wgBind.Device.Store(nil)
+			return e.NoContent(http.StatusNoContent)
+		})
+		se.App.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+			if dev := wgBind.Device.Swap(nil); dev != nil {
+				dev.Close()
+			}
+			return e.Next()
+		})
+		ipc.GET("/device", func(e *core.RequestEvent) error {
+			base := wgConfig.base.Load()
+			if base == nil {
+				return apis.NewApiError(http.StatusServiceUnavailable, "服务尚未初始化成功", nil)
+			}
+			pubkey := wgtypes.Key(base.key).PublicKey()
+			ds := DeviceStatus{
+				Running: wgBind.GetDevice() != nil,
+				Pubkey:  pubkey.String(),
+				Routes:  GetRoutes(),
+				Android: mvpn != nil,
+			}
+			return e.JSON(http.StatusOK, ds)
+		})
+
+		ipc.GET("/settings", func(e *core.RequestEvent) error {
+			var s Settings
+			if err := viper.Unmarshal(&s); err != nil {
+				return err
+			}
+			s2 := SettingsWithRunning{
+				Settings: s,
+			}
+			s2.Running = wgBind.GetDevice() != nil
+			return e.JSON(http.StatusOK, s2)
+		})
+		ipc.POST("/settings", func(e *core.RequestEvent) (err error) {
+			defer err0.Then(&err, nil, nil)
+
+			var s Settings
+			try.To(e.BindBody(&s))
+			oldListen := viper.GetString("listen")
+
+			ms := map[string]any{}
+			b := try.To1(json.Marshal(s))
+			try.To(json.Unmarshal(b, &ms))
+			try.To(viper.MergeConfigMap(ms))
+			try.To(viper.WriteConfig())
+
+			if s.Listen != oldListen {
+				event := &core.TerminateEvent{
+					App:       e.App,
+					IsRestart: true,
+				}
+				e.App.OnTerminate().Trigger(event, func(e *core.TerminateEvent) error {
+					logger := e.App.Logger()
+					RestartCh <- 1
+					logger.Info("重启中")
+					return e.Next()
+				})
+				return e.NoContent(http.StatusNoContent)
+			}
+
+			running := wgBind.GetDevice() != nil
+			if running {
+				StopWireGuard()
+				if err := CommonStartWireGuard(); err != nil {
+					return apis.NewInternalServerError(err.Error(), err)
+				}
+			}
+
+			return e.NoContent(http.StatusNoContent)
+		})
+
+		return se.Next()
 	})
 
-	func() {
+	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		if !viper.GetBool("auto_start") {
-			return
+			return se.Next()
 		}
 		if err := CommonStartWireGuard(); err != nil {
 			se.App.Logger().Error("auto_start failed", "error", err)
 		}
-	}()
+		return se.Next()
+	})
 
-	return se.Next()
+	return nil
 }
 
 var RestartCh = make(chan int)

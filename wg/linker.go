@@ -19,27 +19,30 @@ import (
 
 var lks = store.New(map[string]*Linker{})
 
-func BindLinkers(se *core.ServeEvent) error {
+func InitLinkers(app core.App) error {
 
-	q := dbx.HashExp{"disabled": false}
-	linkers, err := se.App.FindAllRecords(db.TableLinkers, q)
-	if err != nil {
-		return err
-	}
-	if _, err := se.App.DB().Update(db.TableLinkers, dbx.Params{"status": ""}, dbx.Not(dbx.HashExp{"status": ""})).Execute(); err != nil {
-		return err
-	}
-	for _, r := range linkers {
-		lks.GetOrSet(r.Id, linkerInit(se.App, r))
-	}
-	se.App.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		q := dbx.HashExp{"disabled": false}
+		linkers, err := se.App.FindAllRecords(db.TableLinkers, q)
+		if err != nil {
+			return err
+		}
+		if _, err := se.App.DB().Update(db.TableLinkers, dbx.Params{"status": ""}, dbx.Not(dbx.HashExp{"status": ""})).Execute(); err != nil {
+			return err
+		}
+		for _, r := range linkers {
+			lks.GetOrSet(r.Id, linkerInit(se.App, r))
+		}
+		return se.Next()
+	})
+	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
 		for _, lk := range lks.Values() {
 			lk.Stop()
 		}
 		return e.Next()
 	})
 
-	preUpdateRequest(se.App, db.TableLinkers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TableLinkers, func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
@@ -54,7 +57,7 @@ func BindLinkers(se *core.ServeEvent) error {
 		lks.GetOrSet(r.Id, linkerInit(e.App, r))
 		return nil
 	})
-	se.App.OnRecordDeleteRequest(db.TableLinkers).BindFunc(func(e *core.RecordRequestEvent) error {
+	app.OnRecordDeleteRequest(db.TableLinkers).BindFunc(func(e *core.RecordRequestEvent) error {
 		r := e.Record
 		if lk, ok := lks.GetOk(r.Id); ok {
 			lks.Remove(r.Id)
@@ -62,7 +65,7 @@ func BindLinkers(se *core.ServeEvent) error {
 		}
 		return e.Next()
 	})
-	return se.Next()
+	return nil
 }
 
 func linkerInit(app core.App, r *core.Record) func() *Linker {

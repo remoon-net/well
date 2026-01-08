@@ -71,9 +71,9 @@ func Main(argsStr string) string {
 		wg.ListenAddr = addr
 		return e.Next()
 	})
-	app.OnServe().BindFunc(wg.BindHook)
-	app.OnServe().BindFunc(wg.BindIPC)
-	app.OnServe().BindFunc(wg.BindLinkers)
+	try.To(wg.InitHook(app))
+	try.To(wg.InitIPC(app))
+	try.To(wg.InitLinkers(app))
 	app.OnServe().Bind(uiHandler)
 
 	finished := make(chan int, 2)

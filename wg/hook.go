@@ -15,9 +15,9 @@ import (
 	"remoon.net/well/db"
 )
 
-func BindHook(se *core.ServeEvent) error {
+func InitHook(app core.App) error {
 	// 检查数据是否合法
-	preUpdateRequest(se.App, db.TablePeers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TablePeers, func(e *core.RecordRequestEvent) error {
 		r := e.Record
 		pubkey := r.GetString("pubkey")
 		if _, err := wgtypes.ParseKey(pubkey); err != nil {
@@ -30,7 +30,7 @@ func BindHook(se *core.ServeEvent) error {
 		}
 		return preUpdatePeer(e)
 	})
-	se.App.OnRecordsListRequest(db.TablePeers).BindFunc(func(e *core.RecordsListRequestEvent) error {
+	app.OnRecordsListRequest(db.TablePeers).BindFunc(func(e *core.RecordsListRequestEvent) error {
 		for _, p := range e.Records {
 			if ip4 := p.GetString("ipv4"); ip4 != "" {
 				ip6, err := ip4in6(ip4)
@@ -45,7 +45,7 @@ func BindHook(se *core.ServeEvent) error {
 		return e.Next()
 	})
 	// 操作
-	preUpdateRequest(se.App, db.TablePeers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TablePeers, func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func BindHook(se *core.ServeEvent) error {
 		}
 		return nil
 	})
-	se.App.OnRecordDeleteRequest(db.TablePeers).BindFunc(func(e *core.RecordRequestEvent) error {
+	app.OnRecordDeleteRequest(db.TablePeers).BindFunc(func(e *core.RecordRequestEvent) error {
 		devLocker.Lock()
 		defer devLocker.Unlock()
 		dev := wgBind.GetDevice()
@@ -92,7 +92,7 @@ func BindHook(se *core.ServeEvent) error {
 		return e.Next()
 	})
 
-	return se.Next()
+	return nil
 }
 
 func preUpdatePeer(e *core.RecordRequestEvent) (err error) {
