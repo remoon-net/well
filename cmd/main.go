@@ -3,7 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -88,6 +90,13 @@ func Main(argsStr string) string {
 			}
 			finished <- 1
 		}
+	}()
+	go func() {
+		sigch := make(chan os.Signal, 1)
+		signal.Notify(sigch, os.Interrupt, syscall.SIGTERM)
+		<-sigch
+		<-finished // 等待 app exit
+		ExitCh <- 0
 	}()
 
 	ch := make(chan error)
