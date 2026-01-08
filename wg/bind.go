@@ -186,6 +186,9 @@ func InitIPC(app core.App) (err error) {
 				if err := CommonStartWireGuard(); err != nil {
 					return apis.NewInternalServerError(err.Error(), err)
 				}
+			} else {
+				base := getBaseTry()
+				wgConfig.base.Store(&base)
 			}
 
 			return e.NoContent(http.StatusNoContent)
