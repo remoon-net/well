@@ -153,12 +153,27 @@ func BindIPC(se *core.ServeEvent) (err error) {
 
 		var s Settings
 		try.To(e.BindBody(&s))
+		oldListen := viper.GetString("listen")
 
 		ms := map[string]any{}
 		b := try.To1(json.Marshal(s))
 		try.To(json.Unmarshal(b, &ms))
 		try.To(viper.MergeConfigMap(ms))
 		try.To(viper.WriteConfig())
+
+		if s.Listen != oldListen {
+			event := &core.TerminateEvent{
+				App:       e.App,
+				IsRestart: true,
+			}
+			e.App.OnTerminate().Trigger(event, func(e *core.TerminateEvent) error {
+				logger := e.App.Logger()
+				RestartCh <- 1
+				logger.Info("重启中")
+				return e.Next()
+			})
+			return e.NoContent(http.StatusNoContent)
+		}
 
 		running := wgBind.GetDevice() != nil
 		if running {
@@ -182,6 +197,8 @@ func BindIPC(se *core.ServeEvent) (err error) {
 
 	return se.Next()
 }
+
+var RestartCh = make(chan int)
 
 // 支持 Android 端启动, 不用加锁
 func CommonStartWireGuard() error {

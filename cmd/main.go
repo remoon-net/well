@@ -7,6 +7,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/hook"
 	"github.com/shynome/err0"
 	"github.com/shynome/err0/try"
 	"github.com/spf13/cobra"
@@ -17,6 +18,8 @@ import (
 )
 
 var Version = "dev"
+
+var ExitCh = make(chan int)
 
 func Main(argsStr string) string {
 	var args []string
@@ -73,20 +76,34 @@ func Main(argsStr string) string {
 	app.OnServe().BindFunc(wg.BindLinkers)
 	app.OnServe().Bind(uiHandler)
 
-	if argsStr == "" {
-		try.To(app.Start())
-		return wg.ListenAddr
-	}
-	ch := make(chan error)
-	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
-		if err := e.Next(); err != nil {
-			ch <- err
-			return err
+	finished := make(chan int, 2)
+	finished <- 1
+	go func() {
+		logger := app.Logger()
+		for range wg.RestartCh {
+			<-finished
+			err := app.Start()
+			if err != nil {
+				logger.Error("程序退出", "error", err)
+			}
+			finished <- 1
 		}
-		ch <- nil
-		return nil
+	}()
+
+	ch := make(chan error)
+	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
+		Id: "firstboot",
+		Func: func(e *core.ServeEvent) error {
+			if err := e.Next(); err != nil {
+				ch <- err
+				return err
+			}
+			ch <- nil
+			return nil
+		},
 	})
-	go app.Start()
+	defer app.OnServe().Unbind("firstboot")
+	wg.RestartCh <- 1
 	err := <-ch
 	try.To(err)
 	return wg.ListenAddr
