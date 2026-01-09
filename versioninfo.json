@@ -4,5 +4,5 @@
   "productName": "well-net",
   "fileDescription": "well-net is a VPN based on WireGuard and WebRTC.",
   "copyright": "ReMoon.net",
-  "icon": "nsi/well-net.ico"
+  "icon": "well-net.ico"
 }
