@@ -1,3 +1,5 @@
+github.com/akavel/rsrc v0.10.2 h1:Zxm8V5eI1hW4gGaYsJQUhxpjkENuG91ki8B4zCrvEsw=
+github.com/akavel/rsrc v0.10.2/go.mod h1:uLoCtb9J+EyAqh+26kdrTgmzRBFPGOolLWKpdxkKq+c=
 github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496/go.mod h1:oGkLhpf+kjZl6xBf758TQhh5XrAeiJv/7FRz/2spLIg=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 h1:DklsrG3dyBCFEj5IhUbnKptjxatkF07cF2ak3yi77so=
 github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
@@ -44,6 +46,8 @@ github.com/hashicorp/yamux v0.1.2 h1:XtB8kyFOyHXYVFnwT5C3+Bdo8gArse7j2AQ0DA0Uey8
 github.com/hashicorp/yamux v0.1.2/go.mod h1:C+zze2n6e/7wshOZep2A70/aQU6QBRWJO/G6FT1wIns=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/josephspurrier/goversioninfo v1.5.0 h1:9TJtORoyf4YMoWSOo/cXFN9A/lB3PniJ91OxIH6e7Zg=
+github.com/josephspurrier/goversioninfo v1.5.0/go.mod h1:6MoTvFZ6GKJkzcdLnU5T/RGYUbHQbKpYeNP0AgQLd2o=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
@@ -111,8 +115,6 @@ github.com/shynome/err0 v0.2.1 h1:pzSF+IDP59C94KVQb+zg/ZU8DC1CrIzJNjFQS3XjEvA=
 github.com/shynome/err0 v0.2.1/go.mod h1:n5YVOAf8QSa8LMWWFKCXoHQjAjwjywKFiORV/btN3Aw=
 github.com/shynome/websocket v1.9.1 h1:ZVi8CJ8cGlujN6VtCfTOpt1iFSsfyqXOb8PYN4Pm5eU=
 github.com/shynome/websocket v1.9.1/go.mod h1:mVk0rPKqfh3oB7ZvhLGgVg0FSA2SHsPqwpxcVu/sSi8=
-github.com/shynome/wgortc v0.8.3 h1:NHJaHNb1XyoSo1xJ/c7rqMFFgMoxqWJ21S8x4zIsY+M=
-github.com/shynome/wgortc v0.8.3/go.mod h1:4d7L+tCu7eXn4DfGq8ZMFgChSDQhveDhgHa/gfmcsxw=
 github.com/shynome/wgortc v0.8.4 h1:OqBwBfWjtn9c8s6KRQb4KD7VsDpWqPI4EOxDbMMsYFw=
 github.com/shynome/wgortc v0.8.4/go.mod h1:4d7L+tCu7eXn4DfGq8ZMFgChSDQhveDhgHa/gfmcsxw=
 github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 h1:+jumHNA0Wrelhe64i8F6HNlS8pkoyMv5sreGx2Ry5Rw=

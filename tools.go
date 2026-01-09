@@ -2,4 +2,7 @@
 
 package main
 
-import _ "golang.org/x/mobile/bind"
+import (
+	_ "github.com/josephspurrier/goversioninfo/cmd/goversioninfo"
+	_ "golang.org/x/mobile/bind"
+)

@@ -1,0 +1,8 @@
+{
+  "fileVersion": "1.0.0.0",
+  "productVersion": "1.0.0.0",
+  "productName": "well-net",
+  "fileDescription": "well-net is a VPN based on WireGuard and WebRTC.",
+  "copyright": "ReMoon.net",
+  "icon": "nsi/well-net.ico"
+}

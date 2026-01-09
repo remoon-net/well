@@ -9,6 +9,7 @@ replace golang.zx2c4.com/wireguard => github.com/remoon-net/wireguard-go v0.0.0-
 require (
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/hashicorp/yamux v0.1.2
+	github.com/josephspurrier/goversioninfo v1.5.0
 	github.com/pion/webrtc/v4 v4.0.15
 	github.com/pocketbase/dbx v1.11.0
 	github.com/pocketbase/pocketbase v0.35.0
@@ -26,6 +27,7 @@ require (
 )
 
 require (
+	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/domodwyer/mailyak/v3 v3.6.2 // indirect
