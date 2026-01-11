@@ -137,6 +137,9 @@ func (lk *Linker) StartWS(ctx context.Context) {
 		u.Fragment = "" //要去除 Fragment
 		link = u.String()
 
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
 		socket, _ := try.To2(websocket.Dial(ctx, link, opts))
 		conn := websocket.NetConn(ctx, socket, websocket.MessageBinary)
 		sess := try.To1(yamux.Server(conn, nil))
@@ -187,6 +190,8 @@ func (lk *Linker) StartSSH(ctx context.Context) {
 		client := try.To1(ssh.Dial("tcp", addr, config))
 		defer client.Close()
 
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 		go func() {
 			<-ctx.Done()
 			client.Close()
