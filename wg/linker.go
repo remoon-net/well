@@ -185,6 +185,7 @@ func (lk *Linker) StartSSH(ctx context.Context) {
 			BannerCallback:  func(message string) error { return nil },
 		}
 		client := try.To1(ssh.Dial("tcp", addr, config))
+		defer client.Close()
 
 		var (
 			rhost = "127.0.0.1"
@@ -200,7 +201,9 @@ func (lk *Linker) StartSSH(ctx context.Context) {
 
 		raddr := net.JoinHostPort(rhost, rport)
 		ln := try.To1(client.Listen("tcp", raddr))
+		defer ln.Close()
 
+		lk.updateStatus("connected")
 		return http.Serve(ln, wgHandler)
 	},
 		retry.Context(ctx),
