@@ -2,8 +2,10 @@ package wg
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go/v4"
@@ -14,6 +16,7 @@ import (
 	"github.com/shynome/err0"
 	"github.com/shynome/err0/try"
 	"github.com/shynome/websocket"
+	"golang.org/x/crypto/ssh"
 	"remoon.net/well/db"
 )
 
@@ -90,6 +93,18 @@ type Linker struct {
 }
 
 func (lk *Linker) Start(ctx context.Context) {
+	link := lk.GetString("linker")
+	switch {
+	case
+		strings.HasPrefix(link, "http"),
+		strings.HasPrefix(link, "ws"):
+		lk.StartWS(ctx)
+	case strings.HasPrefix(link, "ssh"):
+		lk.StartSSH(ctx)
+	}
+}
+
+func (lk *Linker) StartWS(ctx context.Context) {
 	logger := lk.app.Logger().With(
 		"id", lk.Id,
 		"linker", lk.GetString("linker"),
@@ -131,6 +146,62 @@ func (lk *Linker) Start(ctx context.Context) {
 
 		lk.updateStatus("connected")
 		return http.Serve(sess, wgHandler)
+	},
+		retry.Context(ctx),
+		retry.Attempts(0),
+		retry.MaxDelay(15*time.Second),
+	)
+	lk.updateStatus("stopped")
+}
+
+// ssh://user:pass@sshd.host:22/80/127.0.0.1
+func (lk *Linker) StartSSH(ctx context.Context) {
+	logger := lk.app.Logger().With(
+		"id", lk.Id,
+		"linker", lk.GetString("linker"),
+	)
+	retry.Do(func() (err error) {
+		defer err0.Then(&err, nil, func() {
+			logger.Error("ssh 连接出错", "error", err)
+		})
+
+		lk.updateStatus("connecting")
+
+		link := lk.GetString("linker")
+		u := try.To1(url.Parse(link))
+
+		user := u.User.Username()
+		pass, _ := u.User.Password()
+		port := u.Port()
+		if port == "" {
+			port = "22"
+		}
+		addr := net.JoinHostPort(u.Hostname(), port)
+
+		config := &ssh.ClientConfig{
+			User:            user,
+			Auth:            []ssh.AuthMethod{ssh.Password(pass)},
+			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			BannerCallback:  func(message string) error { return nil },
+		}
+		client := try.To1(ssh.Dial("tcp", addr, config))
+
+		var (
+			rhost = "127.0.0.1"
+			rport = "80"
+		)
+		paths := strings.SplitN(u.Path, "/", 3)
+		if len(paths) == 2 {
+			rport = paths[1]
+		}
+		if len(paths) == 3 {
+			rhost = paths[2]
+		}
+
+		raddr := net.JoinHostPort(rhost, rport)
+		ln := try.To1(client.Listen("tcp", raddr))
+
+		return http.Serve(ln, wgHandler)
 	},
 		retry.Context(ctx),
 		retry.Attempts(0),
