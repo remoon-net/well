@@ -150,6 +150,7 @@ func InitIPC(app core.App) (err error) {
 				Settings: s,
 			}
 			s2.Running = wgBind.GetDevice() != nil
+			s2.MAC = getMAC()
 			return e.JSON(http.StatusOK, s2)
 		})
 		ulaPrefix := netip.MustParsePrefix("fdd9:f8ff::/32")
@@ -253,7 +254,24 @@ type Settings struct {
 
 type SettingsWithRunning struct {
 	Settings
-	Running bool `json:"running"`
+	Running bool   `json:"running"`
+	MAC     string `json:"mac"`
+}
+
+func getMAC() string {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return ""
+	}
+
+	for _, iface := range ifaces {
+		// 忽略回环接口和没有 MAC 地址的接口
+		if iface.Flags&net.FlagLoopback == 0 && len(iface.HardwareAddr) != 0 {
+			return iface.HardwareAddr.String()
+		}
+	}
+
+	return ""
 }
 
 type DeviceStatus struct {
