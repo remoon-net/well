@@ -178,6 +178,7 @@ func InitIPC(app core.App) (err error) {
 				if !ulaPrefix.Contains(ip6) {
 					return apis.NewBadRequestError("IPv6唯一地址(ip6_addr)超出范围, 需要在 fdd9:f8ff::/32 范围内", nil)
 				}
+				s.ULA = ip6.String()
 			}
 
 			ms := map[string]any{}
