@@ -114,54 +114,61 @@ func preUpdatePeer(e *core.RecordRequestEvent) (err error) {
 		}
 	}
 
-	ipf4Str := r.GetString("ipv4")
-	switch ipf4Str {
-	case "":
-		return e.Next()
-	case "auto":
-		peers := try.To1(e.App.FindRecordsByFilter(db.TablePeers, "", "-ip_num", 1, 0))
-		addr := pf4.Addr()
-		bits := 32
-		if len(peers) == 0 {
-			ipf4Str = netip.PrefixFrom(addr.Next(), bits).String()
-		} else {
-			n := int64(peers[0].GetInt("ip_num"))
-			n += 1
-			z := new(big.Int)
-			z.SetBytes(addr.AsSlice())
-			z = z.Add(z, big.NewInt(n))
-			ip, ok := netip.AddrFromSlice(z.Bytes())
-			if !ok {
-				return apis.NewInternalServerError("不应当如此", nil)
+	ip4auto := func() error {
+		ipf4Str := r.GetString("ipv4")
+		switch ipf4Str {
+		case "":
+			return nil
+		case "auto":
+			peers := try.To1(e.App.FindRecordsByFilter(db.TablePeers, "", "-ip_num", 1, 0))
+			addr := pf4.Addr()
+			bits := 32
+			if len(peers) == 0 {
+				ipf4Str = netip.PrefixFrom(addr.Next(), bits).String()
+			} else {
+				n := int64(peers[0].GetInt("ip_num"))
+				n += 1
+				z := new(big.Int)
+				z.SetBytes(addr.AsSlice())
+				z = z.Add(z, big.NewInt(n))
+				ip, ok := netip.AddrFromSlice(z.Bytes())
+				if !ok {
+					return apis.NewInternalServerError("不应当如此", nil)
+				}
+				ipf4Str = netip.PrefixFrom(ip, bits).String()
 			}
-			ipf4Str = netip.PrefixFrom(ip, bits).String()
 		}
-	}
-	r.Set("ipv4", ipf4Str)
+		r.Set("ipv4", ipf4Str)
 
-	// 计算下一个 auto ip的起点
-	ipf4, err := netip.ParsePrefix(ipf4Str)
-	if err != nil {
-		return apis.NewBadRequestError("ip 解析失败", err)
+		// 计算下一个 auto ip的起点
+		ipf4, err := netip.ParsePrefix(ipf4Str)
+		if err != nil {
+			return apis.NewBadRequestError("ip 解析失败", err)
+		}
+		ip := netipx.PrefixLastIP(ipf4)
+		lipStr := ip.String()
+		_ = lipStr
+		if !pf4.Contains(ip) {
+			msg := fmt.Sprintf("ip(%s) 地址不在 route(%s) 的范围内", ipf4Str, pf4.String())
+			return apis.NewBadRequestError(msg, err)
+		}
+		ip1 := new(big.Int)
+		ip1.SetBytes(pf4.Addr().AsSlice())
+		ip2 := new(big.Int)
+		ip2.SetBytes(ip.AsSlice())
+		dis := new(big.Int)
+		dis = dis.Sub(ip2, ip1)
+		n := dis.Int64()
+		if n == 0 {
+			return apis.NewBadRequestError("不可和本机地址一样", nil)
+		}
+		r.Set("ip_num", n)
+		return nil
 	}
-	ip := netipx.PrefixLastIP(ipf4)
-	lipStr := ip.String()
-	_ = lipStr
-	if !pf4.Contains(ip) {
-		msg := fmt.Sprintf("ip(%s) 地址不在 route(%s) 的范围内", ipf4Str, pf4.String())
-		return apis.NewBadRequestError(msg, err)
+	if err := ip4auto(); err != nil {
+		return err
 	}
-	ip1 := new(big.Int)
-	ip1.SetBytes(pf4.Addr().AsSlice())
-	ip2 := new(big.Int)
-	ip2.SetBytes(ip.AsSlice())
-	dis := new(big.Int)
-	dis = dis.Sub(ip2, ip1)
-	n := dis.Int64()
-	if n == 0 {
-		return apis.NewBadRequestError("不可和本机地址一样", nil)
-	}
-	r.Set("ip_num", n)
+
 	return e.Next()
 }
 
