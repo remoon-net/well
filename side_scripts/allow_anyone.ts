@@ -42,24 +42,25 @@ interface Peer extends RecordModel {
 }
 
 const peers = pb.collection<Peer>("peers")
-await peers.subscribe("*", (d) => {
-  if (d.action !== "create") {
-    return
-  }
-  if (!d.record.disabled) {
-    return
-  }
-  if (d.record.ipv6 != "") {
-    return
-  }
-  peers.update(d.record.id, { disabled: false, ipv6: "auto" })
-})
+const f = pb.filter(`name = '' && disabled = true && ipv6 = ''`)
+await peers.subscribe(
+  "*",
+  (d) => {
+    if (d.action !== "create") {
+      return
+    }
+    peers.update(d.record.id, { disabled: false, ipv6: "auto" })
+  },
+  {
+    filter: f,
+  },
+)
 
 async function fixLost() {
   while (true) {
     await new Promise((rl) => setTimeout(rl, 60e3))
     const peerList = await peers.getFullList({
-      filter: pb.filter(`disabled = true && ipv6 = ''`),
+      filter: f,
     })
     for (const p of peerList) {
       await peers.update(p.id, { disabled: false, ipv6: "auto" })

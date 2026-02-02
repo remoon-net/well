@@ -1,0 +1,14 @@
+# /etc/systemd/system/well-net-allow_anyone.service
+[Unit]
+Description=well-net allow anyone
+Documentation=https://github.com/remoon-net/well/tree/main/side_scripts
+After=well-net.service
+Requires=well-net.service
+
+[Service]
+ExecStart=/usr/local/bin/deno run --allow-net=127.0.0.1:7799 /var/lib/well-net/side_scripts/allow_anyone.ts
+WorkingDirectory=/var/lib/well-net/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
