@@ -1,7 +1,7 @@
 name: well-net
 arch: amd64
 platform: linux
-version: 0.0.1
+version: ${VERSION}
 section: net
 priority: optional
 maintainer: "shynome <shynome@gmail.com>"
