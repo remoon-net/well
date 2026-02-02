@@ -101,20 +101,77 @@ func preUpdatePeer(e *core.RecordRequestEvent) (err error) {
 	r := e.Record
 
 	routes := GetRoutes()
-	var (
-		pf6 = try.To1(netip.ParsePrefix(routes[0]))
-		pf4 = try.To1(netip.ParsePrefix(routes[1]))
-	)
 
-	if ip6 := r.GetString("ipv6"); ip6 != "" {
-		ip6 := try.To1(netip.ParsePrefix(ip6)).Addr()
-		if !pf6.Contains(ip6) {
-			msg := fmt.Sprintf("ipv6 地址不在 %s 范围内", pf6.String())
-			return apis.NewBadRequestError(msg, nil)
+	ip6auto := func() error {
+		pf6 := try.To1(netip.ParsePrefix(routes[0]))
+		pf6auto := try.To1(netip.ParsePrefix("2001:00f0::1/32"))
+		ipf6Str := r.GetString("ipv6")
+		switch ipf6Str {
+		case "":
+			return nil
+		case "auto":
+			pf6 := pf6
+			if !pf6auto.Contains(pf6.Addr()) {
+				pf6 = pf6auto
+			}
+			peers := try.To1(e.App.FindRecordsByFilter(db.TablePeers, "", "-ip6_num", 1, 0))
+			addr := pf6.Addr()
+			bits := 128
+			if len(peers) == 0 {
+				ipf6Str = netip.PrefixFrom(addr.Next(), bits).String()
+			} else {
+				n := int64(peers[0].GetInt("ip6_num"))
+				n += 1
+				z := new(big.Int)
+				z.SetBytes(addr.AsSlice())
+				z = z.Add(z, big.NewInt(n))
+				ip, ok := netip.AddrFromSlice(z.Bytes())
+				if !ok {
+					return apis.NewInternalServerError("不应当如此", nil)
+				}
+				ipf6Str = netip.PrefixFrom(ip, bits).String()
+			}
 		}
+		r.Set("ipv6", ipf6Str)
+
+		// 计算下一个 auto ip的起点
+		ipf6, err := netip.ParsePrefix(ipf6Str)
+		if err != nil {
+			return apis.NewBadRequestError("ip 解析失败", err)
+		}
+		ip := netipx.PrefixLastIP(ipf6)
+		lipStr := ip.String()
+		_ = lipStr
+		if !pf6.Contains(ip) {
+			msg := fmt.Sprintf("ip(%s) 地址不在 route(%s) 的范围内", ipf6Str, pf6.String())
+			return apis.NewBadRequestError(msg, err)
+		}
+
+		// 不是 pf6auto 地址范围内的跳过, 不用计算 ip6_num
+		if !pf6auto.Contains(ipf6.Addr()) {
+			return nil
+		}
+
+		ip1 := new(big.Int)
+		ip1.SetBytes(pf6auto.Addr().AsSlice())
+		ip2 := new(big.Int)
+		ip2.SetBytes(ip.AsSlice())
+		dis := new(big.Int)
+		dis = dis.Sub(ip2, ip1)
+		n := dis.Int64()
+		if n == 0 {
+			return apis.NewBadRequestError("不可和本机地址一样", nil)
+		}
+		r.Set("ip6_num", n)
+		return nil
+	}
+	if err := ip6auto(); err != nil {
+		return err
 	}
 
 	ip4auto := func() error {
+		pf4 := try.To1(netip.ParsePrefix(routes[1]))
+
 		ipf4Str := r.GetString("ipv4")
 		switch ipf4Str {
 		case "":
