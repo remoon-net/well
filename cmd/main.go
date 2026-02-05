@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -40,6 +41,12 @@ func Main(argsStr string) string {
 	viper.SetDefault("ip4_route", "192.168.211.1/20")
 	viper.SetDefault("listen", "127.0.0.1:7799")
 	viper.SetDefault("tun", "well-net")
+	switch runtime.GOOS {
+	case "android", "ios":
+		// 除了手机端, 默认都开机自启
+	default:
+		viper.SetDefault("auto_start", "true")
+	}
 	viper.ReadInConfig()
 
 	app.OnServe().BindFunc(func(e *core.ServeEvent) (err error) {
