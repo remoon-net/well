@@ -8,6 +8,7 @@ import (
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/hook"
 	"github.com/shynome/err0"
 	"github.com/shynome/err0/try"
 	"go4.org/netipx"
@@ -17,7 +18,7 @@ import (
 
 func InitHook(app core.App) error {
 	// 检查数据是否合法
-	preUpdateRequest(app, db.TablePeers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TablePeers, 0, func(e *core.RecordRequestEvent) error {
 		r := e.Record
 		pubkey := r.GetString("pubkey")
 		if _, err := wgtypes.ParseKey(pubkey); err != nil {
@@ -45,7 +46,7 @@ func InitHook(app core.App) error {
 		return e.Next()
 	})
 	// 操作
-	preUpdateRequest(app, db.TablePeers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TablePeers, lastOrder, func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
@@ -229,7 +230,13 @@ func preUpdatePeer(e *core.RecordRequestEvent) (err error) {
 	return e.Next()
 }
 
-func preUpdateRequest(app core.App, table string, fn func(e *core.RecordRequestEvent) error) {
-	app.OnRecordCreateRequest(table).BindFunc(fn)
-	app.OnRecordUpdateRequest(table).BindFunc(fn)
+const lastOrder = 99999
+
+func preUpdateRequest(app core.App, table string, order int, fn func(e *core.RecordRequestEvent) error) {
+	h := &hook.Handler[*core.RecordRequestEvent]{
+		Priority: order,
+		Func:     fn,
+	}
+	app.OnRecordCreateRequest(table).Bind(h)
+	app.OnRecordUpdateRequest(table).Bind(h)
 }

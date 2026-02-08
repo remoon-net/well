@@ -46,7 +46,7 @@ func InitLinkers(app core.App) error {
 		return e.Next()
 	})
 
-	preUpdateRequest(app, db.TableLinkers, func(e *core.RecordRequestEvent) error {
+	preUpdateRequest(app, db.TableLinkers, lastOrder, func(e *core.RecordRequestEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
