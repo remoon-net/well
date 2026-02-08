@@ -1,7 +1,6 @@
 package wg
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 	"net/netip"
@@ -83,10 +82,8 @@ func InitHook(app core.App) error {
 			return e.Next()
 		}
 		pubkey := Base64ToHex(e.Record.GetString("pubkey"))
-		var b = new(bytes.Buffer)
-		fmt.Fprintf(b, "public_key=%s\n", pubkey)
-		fmt.Fprintf(b, "remove=true\n")
-		if err := dev.IpcSet(b.String()); err != nil {
+		rmConf := fmt.Sprintf("public_key=%s\nremove=true\n", pubkey)
+		if err := dev.IpcSet(rmConf); err != nil {
 			msg := fmt.Sprintf("删除节点出错: %e", err)
 			return apis.NewInternalServerError(msg, err)
 		}
