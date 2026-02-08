@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.6] - 2025-02-08
+
+- 修复: 数据正确性检查应当放在 OnRecordValidate 中
+- 添加: 支持事件: `onRecordValidate`
+- 优化: hookjs 不包装 GoError
+
 ## [0.0.5] - 2025-02-08
 
 - 添加: hookjs 支持事件 `onRecordCreate`, `onRecordUpdate`, `onRecordDelete`
