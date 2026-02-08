@@ -63,6 +63,7 @@ func InitHookJS(app core.App) error {
 		}
 		logger := e.App.Logger()
 		for _, r := range records {
+			removeHookJS(e.App, r.Id)
 			if err := addHookJS(e.App, r); err != nil {
 				logger.Error("add hookjs failed.", "record", r, "error", err)
 			}
