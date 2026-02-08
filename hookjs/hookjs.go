@@ -1,6 +1,7 @@
 package hookjs
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -247,6 +248,10 @@ func genHandler[T hook.Resolver](h *HookJS, hid string, event string) *hook.Hand
 			}
 			_, err = call(mod, vm.ToValue(e))
 			if err != nil {
+				// Unwrap 出来的是 GoError(native), 不用进行包裹
+				if err := errors.Unwrap(err); err != nil {
+					return err
+				}
 				msg := fmt.Sprintf("插件 %s(%s) 运行出错了", h.Id, h.GetString("name"))
 				return apis.NewInternalServerError(msg, err)
 			}
