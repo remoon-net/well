@@ -45,7 +45,7 @@ func InitHook(app core.App) error {
 		return e.Next()
 	})
 	// 操作
-	preUpdateRequest(app, db.TablePeers, lastOrder, func(e *core.RecordRequestEvent) error {
+	preRecordUpdate(app, db.TablePeers, lastOrder, func(e *core.RecordEvent) error {
 		if err := e.Next(); err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func InitHook(app core.App) error {
 		}
 		return nil
 	})
-	app.OnRecordDeleteRequest(db.TablePeers).BindFunc(func(e *core.RecordRequestEvent) error {
+	app.OnRecordDelete(db.TablePeers).BindFunc(func(e *core.RecordEvent) error {
 		devLocker.Lock()
 		defer devLocker.Unlock()
 		dev := wgBind.GetDevice()
@@ -236,4 +236,13 @@ func preUpdateRequest(app core.App, table string, order int, fn func(e *core.Rec
 	}
 	app.OnRecordCreateRequest(table).Bind(h)
 	app.OnRecordUpdateRequest(table).Bind(h)
+}
+
+func preRecordUpdate(app core.App, table string, order int, fn func(e *core.RecordEvent) error) {
+	h := &hook.Handler[*core.RecordEvent]{
+		Priority: order,
+		Func:     fn,
+	}
+	app.OnRecordCreate(table).Bind(h)
+	app.OnRecordUpdate(table).Bind(h)
 }
