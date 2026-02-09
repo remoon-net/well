@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.0.8] - 2025-02-09
+
+- 优化: 现在在未修改初始密码的情况下可以直接进入管理页面了
+
 ## [0.0.7] - 2025-02-08
 
 - 修复: 修改WireGuard配置监听事件由`OnRecordUpdateRequest`改为`OnRecordUpdate`, 因为有些事件不是通过请求触发的
