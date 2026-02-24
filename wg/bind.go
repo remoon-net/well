@@ -16,6 +16,7 @@ import (
 	"github.com/shynome/err0/try"
 	"github.com/shynome/wgortc/bind"
 	"github.com/shynome/wgortc/device/logger"
+	"github.com/shynome/wgortc/device/vtun"
 	"github.com/spf13/viper"
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun"
@@ -241,7 +242,9 @@ func CommonStartWireGuard() error {
 		mvpn.Start()
 		return nil
 	}
-	return StartWireGuard(DeviceParams{})
+	return StartWireGuard(DeviceParams{
+		VTun: viper.GetBool("vtun"),
+	})
 }
 
 type Settings struct {
@@ -301,6 +304,8 @@ func getBaseTry() configBase {
 	return base
 }
 
+const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
+
 func startWireGuard(params DeviceParams) (err error) {
 	defer err0.Then(&err, nil, nil)
 	var app core.App = wgConfig.App
@@ -322,10 +327,12 @@ func startWireGuard(params DeviceParams) (err error) {
 
 	var tdev tun.Device
 	switch {
+	case params.VTun:
+		tdev = try.To1(vtun.CreateTUN(viper.GetString("tun"), MTU))
+		cRouteUp = vtunRouteUp
 	case params.FD != 0:
 		tdev = try.To1(tunFromFD(params.FD))
 	default:
-		const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
 		tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), MTU))
 	}
 	defer err0.Then(&err, nil, func() {
@@ -355,4 +362,5 @@ func startWireGuard(params DeviceParams) (err error) {
 type DeviceParams struct {
 	FD     int  `json:"fd"`     //
 	Routed bool `json:"routed"` // 如果路由已经添加好了, 则不再次添加
+	VTun   bool `json:"vtun"`
 }

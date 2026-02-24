@@ -42,6 +42,7 @@ func Main(argsStr string) string {
 	viper.SetDefault("ip4_route", "192.168.211.1/20")
 	viper.SetDefault("listen", "127.0.0.1:7799")
 	viper.SetDefault("tun", "well-net")
+	viper.SetDefault("vtun", false)
 	switch runtime.GOOS {
 	case "android", "ios":
 		// 除了手机端, 默认都开机自启
