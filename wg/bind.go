@@ -242,9 +242,7 @@ func CommonStartWireGuard() error {
 		mvpn.Start()
 		return nil
 	}
-	return StartWireGuard(DeviceParams{
-		VTun: viper.GetBool("vtun"),
-	})
+	return StartWireGuard(DeviceParams{})
 }
 
 type Settings struct {
@@ -327,7 +325,7 @@ func startWireGuard(params DeviceParams) (err error) {
 
 	var tdev tun.Device
 	switch {
-	case params.VTun:
+	case viper.GetBool("vtun"):
 		tdev = try.To1(vtun.CreateTUN(viper.GetString("tun"), MTU))
 		cRouteUp = vtunRouteUp
 	case params.FD != 0:
@@ -362,5 +360,4 @@ func startWireGuard(params DeviceParams) (err error) {
 type DeviceParams struct {
 	FD     int  `json:"fd"`     //
 	Routed bool `json:"routed"` // 如果路由已经添加好了, 则不再次添加
-	VTun   bool `json:"vtun"`
 }
