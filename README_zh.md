@@ -6,6 +6,10 @@
 
 well-net 是一款帮助用户和他人建立**内部交流网络**的开源组网软件
 
+## download
+
+https://salt.remoon.cn/
+
 ## 内网聊天软件 delta chat
 
 我发现使用邮件协议交流更适合这种随时离线的场景. 所以选择了 [delta chat](https://delta.chat/), 它支持 `remoon@[2001:ff::1]` 这样基于IP的邮箱格式可以完美适配
@@ -40,6 +44,7 @@ https://youtu.be/D2iu9xNmfR8
 
 - [x] 插件机制. `_hookjs` 不算好使, 但可以实现"允许任何人连接"的功能
 - [ ] <del>自己所属设备统一管理</del> 暂时不做, 感觉用外部脚本实现也挺简单的
+- [ ] 防火墙
 - [ ] 支持 socks proxy
 
 # 双重许可

@@ -6,6 +6,10 @@ English | [中文](./README_zh.md)
 
 well-net is an open-source networking tool that helps users establish a **private internal communication network** with others.
 
+## download
+
+https://well.remoon.net (no i18n, only chinese version)
+
 ## LAN Chat Software: delta chat
 
 I found that using email protocols is better suited for scenarios where participants may go offline at any time. So I chose [delta chat](https://delta.chat/)
@@ -42,6 +46,7 @@ After trying various approaches, using a web UI turned out to be the fastest opt
 
 - [x] Plugin mechanism. `_hookjs` is not very ideal, but it allows implementing features like “allow anyone to connect”
 - [ ] <del>Unified management of owned devices</del> Temporarily not planned; feels easy to implement with external scripts
+- [ ] Firewall?
 - [ ] Support socks proxy
 
 # Dual License
