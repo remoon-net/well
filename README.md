@@ -46,7 +46,7 @@ After trying various approaches, using a web UI turned out to be the fastest opt
 
 - [x] Plugin mechanism. `_hookjs` is not very ideal, but it allows implementing features like “allow anyone to connect”
 - [ ] <del>Unified management of owned devices</del> Temporarily not planned; feels easy to implement with external scripts
-- [ ] Firewall?
+- [x] Firewall. support ports filter. want support tag filter in feature
 - [ ] Support socks proxy
 
 # Dual License
