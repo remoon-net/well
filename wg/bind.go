@@ -302,8 +302,6 @@ func getBaseTry() configBase {
 	return base
 }
 
-const MTU = 2400 // 2400 就是最适合 webrtc 的 mtu, webrtc 的 mtu 是 1200, 设置成 2400 刚好将一个包拆成两个
-
 func startWireGuard(params DeviceParams) (err error) {
 	defer err0.Then(&err, nil, nil)
 	var app core.App = wgConfig.App
@@ -326,12 +324,12 @@ func startWireGuard(params DeviceParams) (err error) {
 	var tdev tun.Device
 	switch {
 	case viper.GetBool("vtun"):
-		tdev = try.To1(vtun.CreateTUN(viper.GetString("tun"), MTU))
+		tdev = try.To1(vtun.CreateTUN(viper.GetString("tun"), bind.MTU))
 		cRouteUp = vtunRouteUp
 	case params.FD != 0:
 		tdev = try.To1(tunFromFD(params.FD))
 	default:
-		tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), MTU))
+		tdev = try.To1(tun.CreateTUN(viper.GetString("tun"), bind.MTU))
 	}
 	defer err0.Then(&err, nil, func() {
 		tdev.Close() // 如果出错了, 释放资源
