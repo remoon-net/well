@@ -1,10 +1,10 @@
 module remoon.net/well
 
-go 1.25.5
+go 1.26.0
 
 replace remoon.net/well-webui => ../well-webui
 
-replace golang.zx2c4.com/wireguard => github.com/remoon-net/wireguard-go v0.0.0-20250703151635-97f4294f663c
+replace golang.zx2c4.com/wireguard => github.com/remoon-net/wireguard-go v0.0.0-20261018095158-6c2ca6255f2d
 
 require (
 	github.com/PuerkitoBio/goquery v1.11.0
@@ -18,15 +18,15 @@ require (
 	github.com/shynome/err0 v0.2.1
 	github.com/shynome/goja-almond v0.0.2
 	github.com/shynome/websocket v1.9.1
-	github.com/shynome/wgortc v0.8.4
+	github.com/shynome/wgortc v0.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 	golang.org/x/crypto v0.46.0
-	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173
+	golang.zx2c4.com/wireguard v0.0.0-20261006164505-2631ce99a06f
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
 	golang.zx2c4.com/wireguard/windows v0.5.3
-	gvisor.dev/gvisor v0.0.0-20230927004350-cbd86285d259
+	gvisor.dev/gvisor v0.0.0-20250503011706-39ed1f5ac29c
 	remoon.net/well-webui v0.0.0-00010101000000-000000000000
 )
 
@@ -48,7 +48,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
-	github.com/google/btree v1.0.1 // indirect
+	github.com/google/btree v1.1.2 // indirect
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josephspurrier/goversioninfo v1.5.0 // indirect
@@ -90,7 +90,7 @@ require (
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
-	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
+	golang.org/x/time v0.7.0 // indirect
 	golang.org/x/tools v0.40.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
